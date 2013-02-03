@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+
+"""
+Simple command line tool for generating json documents.
+
+See https://github.com/barnybug/jg/blob/master/README.md for more details
+"""
+
+import yaml
+import json
+import re
+import sys
+
+def parse_value(v):
+    return yaml.load(v)
+
+def set_path(d, path, value):
+    last = path[-1]
+    for p in path[0:-1]:
+        if not isinstance(d.get(p), dict):
+            d[p] = {}
+        d = d[p]
+    d[last] = value
+
+def make_json(args):
+    body = {}
+    prev = []
+    for arg in args:
+        key, value = re.split('[=:]', arg, 1)
+        value = parse_value(value)
+        path = key.split('.')
+        if key.startswith('.'):
+            # relative to previous
+            for n in xrange(len(path)):
+                if path[n]:
+                    break
+            path = prev[0:-n] + path[n:]
+
+        set_path(body, path, value)
+        prev = path
+    return body
+
+def main():
+    print json.dumps(make_json(sys.argv[1:]), indent=2)
+
+if __name__ == '__main__':
+    main()
